@@ -5,11 +5,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -27,7 +29,48 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+
+
+@Composable
+fun MainScreen() {
+    //declare navigation controller to redirect to another screens
+    val navController = rememberNavController()
+
+    // in scaffold we create bottom navigation bar
+    Scaffold(
+        bottomBar = { BottomNavigationBar(navController) }
+    ) { innerPadding ->
+        // create nav host container.
+        // It has composables(screens) and nav controller to navigate to them
+        NavHost(
+            navController = navController,
+            startDestination = "linear",
+            modifier = Modifier.padding(innerPadding)
+        ) {
+            //we create composables that are objects of AlgorithmScreenUI
+            composable("linear") {
+                AlgorithmScreen(
+                    algorithm = Algorithm.LinearAlgo()
+                )
+            }
+            composable("conditional") {
+                AlgorithmScreen(
+                    algorithm = Algorithm.ConditionAlgo()
+                )
+            }
+            composable("cycle") {
+                AlgorithmScreen(
+                    algorithm = Algorithm.CycleAlgo()
+                )
+            }
+        }
+    }
+}
 
 data class BottomNavigationItem(
     val title: String,
@@ -37,7 +80,7 @@ data class BottomNavigationItem(
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
-fun BottomNavigationBar() {
+fun BottomNavigationBar(navController: NavHostController) {
     val navItems = listOf(
         BottomNavigationItem(
             title = "Linear",
@@ -55,40 +98,49 @@ fun BottomNavigationBar() {
             route = "cycle"
         )
     )
-
-    //declare navigation controller to redirect to another screen
-    val navController = rememberNavController()
-
     //declare variable for saving current screen
     var currentScreenState by rememberSaveable { mutableIntStateOf(0) }
-    Scaffold(
-        bottomBar = {
-            NavigationBar {
-                navItems.forEachIndexed { currentScreenIndex, navItem ->
-                    val isSelected = currentScreenState == currentScreenIndex
-                    NavigationBarItem(
-                        selected = isSelected,
-                        onClick = {
-                            currentScreenState = currentScreenIndex;
-                            navController.navigate(navItem.route)
-                        },
-                        icon = {
-                            Icon(
-                                imageVector = navItem.icon,
-                                contentDescription = navItem.title,
-                                //add color to icon if it is selected or not
-                                tint = if (isSelected) Color(0xFF25E4FF) else Color(0xAAFFFFFF)
-                            )
-                        },
-                        //add label if selected
-                        label = {
-                            if (isSelected) Text(navItem.title)
-                        }
-                    )
-                }
-            }
-        }
+    NavigationBar(
+        containerColor = Color.DarkGray
     ) {
-
+        navItems.forEachIndexed { index, navItem ->
+            val isSelected = currentScreenState == index
+            NavigationBarItem(
+                // Remove white outline around selected icons
+                colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent),
+                selected = isSelected,
+                onClick = {
+                    currentScreenState = index
+                    navController.navigate(navItem.route) {
+                        //save state
+                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                        //only one instance of screen
+                        launchSingleTop = true
+                        //restore state
+                        restoreState = true
+                    }
+                },
+                icon = {
+                    Icon(
+                        imageVector = navItem.icon,
+                        modifier = Modifier.size(64.dp).padding(8.dp),
+                        contentDescription = navItem.title,
+                        //add color to icon if it is selected or not
+                        tint = if (isSelected) MaterialTheme.colorScheme.primary else Color(
+                            0xAAFFFFFF),
+                    )
+                },
+                //add label if selected
+                label = {
+                    if (isSelected) {
+                        Text(
+                            navItem.title,
+                            fontSize = 20.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            )
+        }
     }
 }

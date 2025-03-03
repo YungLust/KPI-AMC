@@ -41,22 +41,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             Lab1Theme {
-                MainApp()
+                MainScreen()
             }
         }
-    }
-}
-
-@Composable
-fun MainApp() {
-    val navController = rememberNavController()
-
-    Scaffold(
-        bottomBar = { BottomNavigationBar(navController = navController) }
-    ) { paddingValues ->
-        NavigationGraph(
-            navController = navController,
-            modifier = Modifier.padding(paddingValues)
-        )
     }
 }
