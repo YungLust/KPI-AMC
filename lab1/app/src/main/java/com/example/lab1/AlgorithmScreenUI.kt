@@ -1,8 +1,6 @@
 package com.example.lab1
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,16 +23,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.math.BigDecimal
 
 @Composable
-fun SortingScreen(
-    screenTitle: String,
-    Algorithm: (IntArray) -> IntArray
-) {
-    var inputText by remember { mutableStateOf("") }
-    var resultText by remember { mutableStateOf("") }
-    var errorText by remember { mutableStateOf("") }
-
+fun AlgorithmScreen(algorithm: Algorithm) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -43,7 +35,7 @@ fun SortingScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = screenTitle,
+            text = algorithm.name,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
@@ -51,77 +43,142 @@ fun SortingScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text(
-            text = "Enter numbers separated by commas (e.g., 5,3,8,1,2)",
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = inputText,
-            onValueChange = {
-                inputText = it
-                errorText = ""
-            },
-            label = { Text("Input Array") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
-
-        if (errorText.isNotEmpty()) {
-            Text(
-                text = errorText,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = {
-                try {
-                    // Parse input string to array of integers
-                    val inputArray = inputText.split(",").map { it.trim().toInt() }.toIntArray()
-
-                    // Apply sorting algorithm
-                    val sortedArray = sortingAlgorithm(inputArray)
-
-                    // Display result
-                    resultText = "Sorted Array: ${sortedArray.joinToString(", ")}"
-                    errorText = ""
-                } catch (e: Exception) {
-                    errorText = "Invalid input. Please enter numbers separated by commas."
-                    resultText = ""
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Sort")
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        if (resultText.isNotEmpty()) {
-            Card(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text(
-                        text = "Result",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(text = resultText)
+        when (algorithm) {
+            is Algorithm.LinearAlgo -> {
+                TwoParameterAlgorithmContent(
+                    param1Name = "C",
+                    param2Name = "G",
+                    executeAlgorithm = { c, g ->
+                        try {
+                            val result = algorithm.execute(BigDecimal(c), BigDecimal(g))
+                            "Result: $result"
+                        } catch (e: Exception) {
+                            "Error: ${e.message ?: "Invalid input"}"
+                        }
+                    }
+                )
+            }
+            is Algorithm.ConditionAlgo -> {
+                TwoParameterAlgorithmContent(
+                    param1Name = "X",
+                    param2Name = "Z",
+                    executeAlgorithm = { x, z ->
+                        try {
+                            val result = algorithm.execute(x.toDouble(), z.toDouble())
+                            "Result: $result"
+                        } catch (e: Exception) {
+                            "Error: ${e.message ?: "Invalid input"}"
+                        }
+                    }
+                )
+            }
+            is Algorithm.CycleAlgo -> {
+                NoParameterAlgorithmContent {
+                    try {
+                        val result = algorithm.execute()
+                        "Result: ${result.joinToString(", ")}"
+                    } catch (e: Exception) {
+                        "Error: ${e.message ?: "An error occurred"}"
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun ResultCard(resultText: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Result",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(text = resultText)
+        }
+    }
+}
+
+@Composable
+fun TwoParameterAlgorithmContent(
+    param1Name: String,
+    param2Name: String,
+    executeAlgorithm: (String, String) -> String
+) {
+    var param1 by remember { mutableStateOf("") }
+    var param2 by remember { mutableStateOf("") }
+    var resultText by remember { mutableStateOf("") }
+
+    OutlinedTextField(
+        value = param1,
+        onValueChange = { param1 = it },
+        label = { Text(param1Name) },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true
+    )
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    OutlinedTextField(
+        value = param2,
+        onValueChange = { param2 = it },
+        label = { Text(param2Name) },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true
+    )
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    Button(
+        onClick = {
+            resultText = executeAlgorithm(param1, param2)
+        },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text("Calculate")
+    }
+
+    Spacer(modifier = Modifier.height(24.dp))
+
+    if (resultText.isNotEmpty()) {
+        ResultCard(resultText)
+    }
+}
+
+@Composable
+fun NoParameterAlgorithmContent(
+    executeAlgorithm: () -> String
+) {
+    var resultText by remember { mutableStateOf("") }
+
+    Text(
+        text = "This algorithm doesn't require any parameters.",
+        fontSize = 14.sp,
+        modifier = Modifier.padding(vertical = 8.dp)
+    )
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    Button(
+        onClick = {
+            resultText = executeAlgorithm()
+        },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text("Run Algorithm")
+    }
+
+    Spacer(modifier = Modifier.height(24.dp))
+
+    if (resultText.isNotEmpty()) {
+        ResultCard(resultText)
     }
 }
