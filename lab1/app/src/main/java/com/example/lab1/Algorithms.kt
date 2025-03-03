@@ -3,7 +3,6 @@ package com.example.lab1
 import java.math.BigDecimal
 import java.math.MathContext
 import kotlin.math.cos
-import kotlin.math.pow
 import kotlin.math.sin
 
 sealed class Algorithm(val name: String) {
