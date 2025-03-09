@@ -1,5 +1,6 @@
 package com.example.lab1
 
+import android.os.Environment
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
@@ -29,6 +30,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.io.File
+import java.io.FileNotFoundException
+import java.io.IOException
 import java.math.BigDecimal
 
 @Composable
@@ -53,6 +57,7 @@ fun AlgorithmScreen(algorithm: Algorithm) {
             is Algorithm.LinearAlgo -> {
                 TwoParameterAlgorithmContent(
                     image = R.drawable.algo_linear,
+                    fileName = "linear.txt",
                     param1Name = "C",
                     param2Name = "G",
                     executeAlgorithm = { c, g ->
@@ -71,6 +76,7 @@ fun AlgorithmScreen(algorithm: Algorithm) {
             is Algorithm.ConditionAlgo -> {
                 TwoParameterAlgorithmContent(
                     image = R.drawable.algo_conditional,
+                    fileName = "conditional.txt",
                     param1Name = "X",
                     param2Name = "Z",
                     executeAlgorithm = { x, z ->
@@ -86,7 +92,6 @@ fun AlgorithmScreen(algorithm: Algorithm) {
 
             is Algorithm.CycleAlgo -> {
                 NoParameterAlgorithmContent(image = R.drawable.algo_cycle) {
-
                     try {
                         val result = algorithm.execute()
                         "Result: ${result.joinToString(", ")}"
@@ -124,6 +129,7 @@ fun ResultCard(resultText: String) {
 fun TwoParameterAlgorithmContent(
     @DrawableRes // we say that 'image: Int' is an resource id rather than int
     image: Int, // Pass R.drawable resource ID
+    fileName: String,
     param1Name: String,
     param2Name: String,
     executeAlgorithm: (String, String) -> String
@@ -131,6 +137,37 @@ fun TwoParameterAlgorithmContent(
     var param1 by remember { mutableStateOf("") }
     var param2 by remember { mutableStateOf("") }
     var resultText by remember { mutableStateOf("") }
+
+    fun readFromFile(fileName: String): Pair<String, String> {
+        // Choose a public directory where the file will be saved, and can be accessed easily
+        val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), fileName)
+        val fileContent: String?
+
+        if (file.exists()) {
+            fileContent = file.readText()
+        } else {
+            file.createNewFile() // This will create an empty file
+            throw FileNotFoundException("File not found\nNew one was created: ${file.absolutePath}")
+        }
+
+        val map = fileContent.lines().associate { line ->
+            val parts = line.split("=")
+            if (parts.size == 2) {
+                parts[0].trim() to parts[1].trim()
+            } else {
+                throw IllegalArgumentException()
+            }
+        }
+
+        val param1Value = map[param1Name.lowercase()]
+        val param2Value = map[param2Name.lowercase()]
+
+        if (param1Value != null && param2Value != null) {
+            return Pair(param1Value, param2Value)
+        } else {
+            throw IllegalArgumentException()
+        }
+    }
 
     OutlinedTextField(
         value = param1,
@@ -165,8 +202,22 @@ fun TwoParameterAlgorithmContent(
 
     Button(
         onClick = {
-            resultText = executeAlgorithm(param1, param2)
+            try {
+                val (fileParam1, fileParam2) = readFromFile(fileName)
+                param1 = fileParam1
+                param2 = fileParam2
+                resultText = executeAlgorithm(param1, param2)
+            } catch (e: FileNotFoundException) {
+                resultText = "Error: ${e.message}"
+            } catch (e: IOException) {
+                resultText = "Error: Unable to read file."
+            } catch (e: IllegalArgumentException) {
+                resultText = "Error: incorrect data format. Try: <parameter-name>=<value> (e.g. 'c=15')"
+            } catch (e: Exception) {
+                resultText = "Error: Unexpected error occurred."
+            }
         },
+
         modifier = Modifier.fillMaxWidth()
     ) {
         Text("Read from file")
