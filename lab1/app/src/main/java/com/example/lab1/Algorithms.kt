@@ -8,7 +8,7 @@ import kotlin.math.sin
 sealed class Algorithm(val name: String) {
     class LinearAlgo : Algorithm("Linear Algorithm") {
         fun execute(c: BigDecimal, g: BigDecimal): BigDecimal {
-            //we use big decimial because the number is hugely vast
+            //we use big decimal because the number is huge
             val up = c.add(BigDecimal(27).multiply(g))
             val down = BigDecimal(234).multiply(c).multiply(g)
             val exponent = g.add(BigDecimal(27).multiply(c))
