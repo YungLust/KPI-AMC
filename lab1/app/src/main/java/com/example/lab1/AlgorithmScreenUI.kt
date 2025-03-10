@@ -153,7 +153,7 @@ fun TwoParameterAlgorithmContent(
         val map = fileContent.lines().associate { line ->
             val parts = line.split("=")
             if (parts.size == 2) {
-                parts[0].trim() to parts[1].trim()
+                parts[0].lowercase().trim() to parts[1].trim()
             } else {
                 throw IllegalArgumentException()
             }
